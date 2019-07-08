@@ -1,7 +1,7 @@
 #! /user/bin/env python3.5
 """
-Middleware splunk command line tool.
-Imported the custom :mod:`connect_splunk` and :mod:`splunk_search` modules.
+Middleware splunk command line tool to run splunk queries using the underlying splunk API's for python.
+Import the custom :mod:`connect_splunk` and :mod:`splunk_search` modules from current project.
 """
 import argparse
 import time
@@ -18,9 +18,21 @@ import splunk_search
 
 def main():
     """ 
-    Command line tool accepts three positional and five optional arguments.
-    The positional argument execmode only accepts the values in the given choices list.
+    Command line tool accepts the following arguments.
+
+    Positional args:
+        - execmode (str): Only the values from the given choices list are accepted.
+        - startdate (str): Start date.
+        - enddate (str): End date.
+
+    Optional args:
+        - household (str): Valid household uuid.
+        - api (str): Valid api name.
+        - splunkindex (str): Valid splunk index.
+        - mwenv (str): Valid mw env.
+        - couchurl (str): Valid couch url.            
     """
+
     parser = argparse.ArgumentParser()
     choices_list=['story', 'api_errors']
     parser.add_argument("execmode", help="setting the execution mode", choices=choices_list)

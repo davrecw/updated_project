@@ -1,6 +1,7 @@
 """
 Custom :mod:`splunk_search` module implements :class:`SplunkSearch` and :class:`SplunkSearchJob` classes.
 """
+from __future__ import print_function
 import sys
 from collections import Counter
 from time import sleep
@@ -11,8 +12,13 @@ import splunklib.binding as slib
 
 class SplunkSearch(object):
     """
-    :class:'SplunkSearch' class initializes the attributes service, start_date and end_date.
-    Implements search method which accepts the search_query parameter.
+    :class:`SplunkSearch` class initializes the following attributes.
+
+    - service
+    - start_date
+    - end_date.
+
+    Implements :func:`search` method which accepts the search_query parameter.
     """
 
     def __init__(self,service,start_date,end_date):
@@ -23,7 +29,7 @@ class SplunkSearch(object):
 
     def search(self,search_query):
         """
-        Trigger search job based on the search_query argument passed.
+        Trigger search :func:`job` based on the search_query argument passed.
         """
 
         kwargs_normal_search = {"exec_mode": "blocking", "earliest_time": self.start_date, "latest_time": self.end_date}
@@ -42,8 +48,16 @@ class SplunkSearch(object):
 class SplunkSearchJob(SplunkSearch):
     """ 
     :class:`SplunkSearchJob` class inherits from :class:`SplunkSearch`.
-    Class attributes splunk_index,mw_env and couch_url are declared.  Initializes attributes story_mode,
-    household_id and select_api.
+
+    Class attributes:
+        - splunk_index.
+        - mw_env.
+        - couch_url.
+
+    Initializes attributes:
+        - story_mode.
+        - household_id.
+        - select_api.
     """
 
     # Declaring class attributes.
@@ -62,8 +76,10 @@ class SplunkSearchJob(SplunkSearch):
 
     def search_job(self,splunk_index,mw_env,couch_url):
         """
-        Method search_job accepts the parameters splunk_index,mw_env and couch_url.
+        This method accepts the parameters splunk_index,mw_env and couch_url.
         Calls the search method of parent class based on the conditional statement.
+
+        :raises: slib.HTTPError.
         """
 
         # Assign a dictionary with exec_mode as key and search query as value.
@@ -100,7 +116,9 @@ class SplunkSearchJob(SplunkSearch):
 
     def process_results(self,search_results):
         """
-        Method process_results accepts the parameter search_results and returns the processed results.
+        This method accepts the parameter search_results and returns the processed results.
+
+        :raises: AttributeError.
         """
 
         if search_results:
@@ -143,7 +161,9 @@ class SplunkSearchJob(SplunkSearch):
 
     def print_output(self,processed_results):
         """
-        Method print_output accepts the parameter processed_results and prints results onto the console.
+        This method accepts the parameter processed_results and prints results onto the console.
+
+        :raises: ValueError.
         """       
 
         if processed_results:
@@ -179,7 +199,7 @@ class SplunkSearchJob(SplunkSearch):
                     print("Households: ",len(api_error_list))
                     print()
                     for x in api_error_list:
-                        print(f"{SplunkSearchJob.couch_url}/households/{x}")
+                        print("{}/households/{}".format(SplunkSearchJob.couch_url,x))
 
             except ValueError as e:
                 print("Value error on trying to print output")

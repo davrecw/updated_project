@@ -1,0 +1,189 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>mw_splunk_tool &#8212; Middlewar splunk tool 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for mw_splunk_tool</h1><div class="highlight"><pre>
+<span></span><span class="ch">#! /user/bin/env python3.5</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Middleware splunk command line tool to run splunk queries using the underlying splunk API&#39;s for python.</span>
+<span class="sd">Import the custom :mod:`connect_splunk` and :mod:`splunk_search` modules from current project.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">dateutil.parser</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+<span class="kn">import</span> <span class="nn">splunklib.client</span> <span class="k">as</span> <span class="nn">client</span>
+<span class="kn">import</span> <span class="nn">splunklib.results</span> <span class="k">as</span> <span class="nn">results</span>
+<span class="kn">import</span> <span class="nn">connect_splunk</span>
+<span class="kn">import</span> <span class="nn">splunk_search</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../code.html#mw_splunk_tool.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Command line tool accepts the following arguments.</span>
+
+<span class="sd">    Positional args:</span>
+<span class="sd">        - execmode (str): Only the values from the given choices list are accepted.</span>
+<span class="sd">        - startdate (str): Start date.</span>
+<span class="sd">        - enddate (str): End date.</span>
+
+<span class="sd">    Optional args:</span>
+<span class="sd">        - household (str): Valid household uuid.</span>
+<span class="sd">        - api (str): Valid api name.</span>
+<span class="sd">        - splunkindex (str): Valid splunk index.</span>
+<span class="sd">        - mwenv (str): Valid mw env.</span>
+<span class="sd">        - couchurl (str): Valid couch url.            </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">choices_list</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;story&#39;</span><span class="p">,</span> <span class="s1">&#39;api_errors&#39;</span><span class="p">]</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;execmode&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;setting the execution mode&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="n">choices_list</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;startdate&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add the start date&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;enddate&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add the end date&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--household&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add household uuid&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--api&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add the api name&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--splunkindex&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add splunk index&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--mwenv&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add splunk mw env&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--couchurl&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;add couch url&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># Date parse and validation.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">dateutil</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">startdate</span><span class="p">)</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="n">end</span><span class="o">=</span><span class="n">dateutil</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">enddate</span><span class="p">)</span>
+        <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error on trying to parse start and end dates&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="kc">None</span>
+
+    <span class="c1"># Evaluating conditional statement. </span>
+    <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">splunk_service</span><span class="o">=</span><span class="n">connect_splunk</span><span class="o">.</span><span class="n">ConnectToSplunk</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>  <span class="c1"># Connect to splunk server.</span>
+
+            <span class="n">splk_search</span><span class="o">=</span><span class="n">splunk_search</span><span class="o">.</span><span class="n">SplunkSearchJob</span><span class="p">(</span><span class="n">splunk_service</span><span class="p">,</span><span class="n">start</span><span class="p">,</span>
+                                                      <span class="n">end</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">execmode</span><span class="p">,</span>
+                                                      <span class="n">args</span><span class="o">.</span><span class="n">household</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">api</span><span class="p">)</span>  <span class="c1"># Instantiate new object.</span>
+            <span class="n">search_results</span><span class="o">=</span><span class="n">splk_search</span><span class="o">.</span><span class="n">search_job</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">splunkindex</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">mwenv</span><span class="p">,</span>
+                                                  <span class="n">args</span><span class="o">.</span><span class="n">couchurl</span><span class="p">)</span>  <span class="c1"># Call the search_job method and store the results.</span>
+
+            <span class="k">if</span> <span class="n">search_results</span><span class="p">:</span>
+                <span class="n">splk_search</span><span class="o">.</span><span class="n">print_output</span><span class="p">(</span><span class="n">search_results</span><span class="p">)</span>  <span class="c1"># Call the  print_output method to display the results.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No results returned..!!&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Socket error on trying to connect to splunk server..!!&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Middlewar splunk tool</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../code.html">Auto Generated Documentation</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, David Bathula.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

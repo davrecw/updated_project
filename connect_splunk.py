@@ -9,8 +9,14 @@ import splunklib.results as results
 
 class ConnectToSplunk(object):
     """
-    ConnectToSplunk declares constants HOST,PORT,USERNAME and PASSWORD.
-    Implements static method connect which creates and returns a service instance.
+    :class:`ConnectToSplunk` declares the following constants.
+
+    - HOST.
+    - PORT.
+    - USERNAME.
+    - PASSWORD.
+
+    Implements static method :func:`connect` which creates and returns a service instance.
     """
 
     HOST="splunk.fetchtv.com.au"
