@@ -1,7 +1,7 @@
 #! /user/bin/env python3.5
 """
 Middleware splunk command line tool.
-Imported the custom :mod: `connect_splunk` and :mod: `splunk_search` modules.
+Imported the custom :mod:`connect_splunk` and :mod:`splunk_search` modules.
 """
 import argparse
 import time
@@ -9,11 +9,11 @@ import sys
 import re
 import socket
 import dateutil.parser
-import connect_splunk
-import splunk_search
+from time import sleep
 import splunklib.client as client
 import splunklib.results as results
-from time import sleep
+import connect_splunk
+import splunk_search
 
 
 def main():

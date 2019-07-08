@@ -2,11 +2,11 @@
 Custom :mod:`splunk_search` module implements :class:`SplunkSearch` and :class:`SplunkSearchJob` classes.
 """
 import sys
+from collections import Counter
+from time import sleep
 import splunklib.client as client
 import splunklib.results as results
 import splunklib.binding as slib
-from collections import Counter
-from time import sleep
 
 
 class SplunkSearch(object):

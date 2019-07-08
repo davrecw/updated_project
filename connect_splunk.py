@@ -2,9 +2,9 @@
 Custom :mod:`connect_splunk` module implements :class:`ConnectToSplunk` class and static method connect.
 """
 import sys
+from time import sleep
 import splunklib.client as client
 import splunklib.results as results
-from time import sleep
 
 
 class ConnectToSplunk(object):
