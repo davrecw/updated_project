@@ -5,6 +5,7 @@
 
 Welcome to Middlewar splunk tool's documentation!
 =================================================
+Middleware splunk tool is a command line tool to perform splunk queries.
 
 .. toctree::
    :maxdepth: 2
